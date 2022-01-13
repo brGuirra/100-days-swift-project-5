@@ -74,13 +74,11 @@ class ViewController: UITableViewController {
         present(ac, animated: true)
     }
     
-    // Submit the word answered by the user. The method
-    // make a validation of the word calling helper functions
+    // Submit the word answered by the user
+    // The method make a validation of the word
+    // calling helper functions
     func submit(_ answer: String) {
         let lowerAnswer = answer.lowercased()
-        
-        let errorTitle: String
-        let errorMessage: String
         
         if isPossible(word: lowerAnswer) {
             if isOriginal(word: lowerAnswer) {
@@ -90,32 +88,24 @@ class ViewController: UITableViewController {
                     let indexPath = IndexPath(row: 0, section: 0)
                     
                     tableView.insertRows(at: [indexPath], with: .automatic)
-                    return
-                } else {
-                    errorTitle = "Word not recognised"
-                    errorMessage = "You can't just make them up, you know!"
                 }
-            } else {
-                errorTitle = "Word used already"
-                errorMessage = "Be more original!"
             }
-        } else {
-            guard let title = title?.lowercased() else { return }
-            errorTitle = "Word not possible"
-            errorMessage = "You can't spell that word from \(title)"
         }
-        
-        let ac = UIAlertController(title: errorTitle, message: errorMessage, preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
     }
     
-    // Methos used to validate the a word according with
-    // the rules of the game
+    // Check if the word doesn't exist in the
+    // usedWords array
     func isOriginal(word: String) -> Bool {
-        return !usedWords.contains(word)
+        if !usedWords.contains(word) {
+            return true
+        } else {
+            showErrorMessage(errorTitle: "Word used already", errorMessage: "Be more original!")
+            return false
+        }
     }
     
+    // Check if the word's letters are all present
+    // in the current game's word
     func isPossible(word: String) -> Bool {
         guard var tempWord = title?.lowercased() else { return false }
         
@@ -123,13 +113,18 @@ class ViewController: UITableViewController {
             if let position = tempWord.firstIndex(of: letter) {
                 tempWord.remove(at: position)
             } else {
-                 return false
+                if let title = title?.lowercased() {
+                    showErrorMessage(errorTitle: "Word not possible", errorMessage: "You can't spell that word from \(title)")
+                }
+                return false
             }
         }
+        
         
         return true
     }
     
+    // Check if the word is speled correctly in English
     func isReal(word: String) -> Bool {
         let checker = UITextChecker()
         
@@ -139,7 +134,18 @@ class ViewController: UITableViewController {
         let range = NSRange(location: 0, length: word.utf16.count)
         let misspeledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
         
-        return misspeledRange.location == NSNotFound
+        if misspeledRange.location == NSNotFound {
+            return true
+        } else {
+            showErrorMessage(errorTitle: "Word not recognised", errorMessage: "You can't just make them up, you know!")
+            return false
+        }
+    }
+    
+    func showErrorMessage(errorTitle: String, errorMessage: String) {
+        let ac = UIAlertController(title: errorTitle, message: errorMessage, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac, animated: true)
     }
 }
 
