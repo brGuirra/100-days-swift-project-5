@@ -80,17 +80,37 @@ class ViewController: UITableViewController {
     func submit(_ answer: String) {
         let lowerAnswer = answer.lowercased()
         
-        if isPossible(word: lowerAnswer) {
-            if isOriginal(word: lowerAnswer) {
-                if isReal(word: lowerAnswer) {
-                    usedWords.insert(lowerAnswer, at: 0)
-                    
-                    let indexPath = IndexPath(row: 0, section: 0)
-                    
-                    tableView.insertRows(at: [indexPath], with: .automatic)
+        guard let currentGameWord = title?.lowercased() else { return }
+        
+        if isWithinTheRulesOfTheGame(word: lowerAnswer, currentGameWord: currentGameWord) {
+            if isPossible(word: lowerAnswer, currentGameWord: currentGameWord) {
+                if isOriginal(word: lowerAnswer) {
+                    if isReal(word: lowerAnswer) {
+                        usedWords.insert(lowerAnswer, at: 0)
+                        
+                        let indexPath = IndexPath(row: 0, section: 0)
+                        
+                        tableView.insertRows(at: [indexPath], with: .automatic)
+                    }
                 }
             }
         }
+    }
+    
+    // Check if the word has more than 2 letters and
+    // if isn't equal to the game's word
+    func isWithinTheRulesOfTheGame(word: String, currentGameWord: String) -> Bool {
+        if word.count < 3 {
+            showErrorMessage(errorTitle: "Too short", errorMessage: "The words must have at least three letters")
+            return false
+        }
+        
+        if word == currentGameWord {
+            showErrorMessage(errorTitle: "Not allowed", errorMessage: "You can't use the word displayed by the game")
+            return false
+        }
+        
+        return true
     }
     
     // Check if the word doesn't exist in the
@@ -106,8 +126,8 @@ class ViewController: UITableViewController {
     
     // Check if the word's letters are all present
     // in the current game's word
-    func isPossible(word: String) -> Bool {
-        guard var tempWord = title?.lowercased() else { return false }
+    func isPossible(word: String, currentGameWord: String) -> Bool {
+        var tempWord = currentGameWord
         
         for letter in word {
             if let position = tempWord.firstIndex(of: letter) {
