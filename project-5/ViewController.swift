@@ -17,6 +17,9 @@ class ViewController: UITableViewController {
         // Create a button in navigation bar to add words
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(promptForAnswer))
         
+        // Create a button in navigation bar to restart the game
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Restart", style: .plain, target: self, action: #selector(startGame))
+        
         // Read the start.txt file from bundle and insert its value in an
         // array of Strings
         if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
@@ -34,7 +37,7 @@ class ViewController: UITableViewController {
 
     // Get a randow word from allWords array and place it
     // as the initial word for the game
-    func startGame() {
+    @objc func startGame() {
         title = allWords.randomElement()
         usedWords.removeAll(keepingCapacity: true)
         tableView.reloadData()
