@@ -8,8 +8,7 @@
 import UIKit
 
 class ViewController: UITableViewController {
-    var allWords = [String]()
-    var usedWords = [String]()
+    var gameData = GameData()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,39 +19,59 @@ class ViewController: UITableViewController {
         // Create a button in navigation bar to restart the game
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Restart", style: .plain, target: self, action: #selector(startGame))
         
-        // Read the start.txt file from bundle and insert its value in an
-        // array of Strings
-        if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
-            if let startWords = try? String(contentsOf: startWordsURL) {
-                allWords = startWords.components(separatedBy: "\n")
+        let defaults = UserDefaults.standard
+        
+        if let savedData = defaults.object(forKey: "gameData") as? Data {
+            let decoder = JSONDecoder()
+            
+            do {
+              gameData = try decoder.decode(GameData.self, from: savedData)
+            } catch {
+                print("Failed to load game data.")
             }
+        } else {
+            // Read the start.txt file from bundle and insert its value in an
+            // array of Strings
+            if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
+                if let startWords = try? String(contentsOf: startWordsURL) {
+                    var words = startWords.components(separatedBy: "\n")
+                    
+                    words.shuffle()
+                    
+                    gameData.allWords = words
+                }
+            }
+            
+            if gameData.allWords.isEmpty {
+                gameData.allWords = ["silkworm"]
+            }
+            
+            startGame()
         }
-        
-        if allWords.isEmpty {
-            allWords = ["silkworm"]
-        }
-        
-        startGame()
     }
 
     // Get a randow word from allWords array and place it
     // as the initial word for the game
     @objc func startGame() {
-        title = allWords.randomElement()
-        usedWords.removeAll(keepingCapacity: true)
+        if let randomWord = gameData.allWords.randomElement() {
+          title = randomWord
+            gameData.currentWord = randomWord
+        }
+        
+        gameData.answers.removeAll(keepingCapacity: true)
         tableView.reloadData()
     }
     
     // Methods to create the cell and row in the TableView
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return usedWords.count
+        return gameData.answers.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Word", for: indexPath)
         var content =  cell.defaultContentConfiguration()
         
-        content.text = usedWords[indexPath.row]
+        content.text = gameData.answers[indexPath.row]
         cell.contentConfiguration = content
         return cell
     }
@@ -89,10 +108,10 @@ class ViewController: UITableViewController {
             if isPossible(word: lowerAnswer, currentGameWord: currentGameWord) {
                 if isOriginal(word: lowerAnswer) {
                     if isReal(word: lowerAnswer) {
-                        usedWords.insert(lowerAnswer, at: 0)
+                        gameData.answers.insert(lowerAnswer, at: 0)
+                        save()
                         
                         let indexPath = IndexPath(row: 0, section: 0)
-                        
                         tableView.insertRows(at: [indexPath], with: .automatic)
                     }
                 }
@@ -119,7 +138,7 @@ class ViewController: UITableViewController {
     // Check if the word doesn't exist in the
     // usedWords array
     func isOriginal(word: String) -> Bool {
-        if !usedWords.contains(word) {
+        if !gameData.answers.contains(word) {
             return true
         } else {
             showErrorMessage(errorTitle: "Word used already", errorMessage: "Be more original!")
@@ -169,6 +188,18 @@ class ViewController: UITableViewController {
         let ac = UIAlertController(title: errorTitle, message: errorMessage, preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
         present(ac, animated: true)
+    }
+    
+    func save() {
+        let encoder = JSONEncoder()
+        
+        if let savedData = try? encoder.encode(gameData) {
+            let defaults = UserDefaults.standard
+            
+            defaults.set(savedData, forKey: "gameData")
+        } else {
+            print("Failed to save game data.")
+        }
     }
 }
 
